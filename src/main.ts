@@ -48,7 +48,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(port, '0.0.0.0'); // Слушаем на всех интерфейсах
+  await app.listen(port, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
