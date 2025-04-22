@@ -11,6 +11,7 @@ import { Pool, PoolClient } from 'pg';
 import { PG_CONNECTION } from '../core/database/database.provider';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { ICategory } from './interfaces/category.interface';
 
 @Injectable()
 export class CategoriesService {
@@ -57,7 +58,7 @@ export class CategoriesService {
     }
   }
 
-  async findAll(companyId?: number): Promise<any[]> {
+  async findAll(companyId?: number): Promise<ICategory[]> {
     const client = await this.pool.connect();
     try {
       let sql = 'SELECT * FROM categories';
