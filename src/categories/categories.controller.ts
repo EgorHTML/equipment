@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Query, Res } from '@nestjs/common';
-import { ICategory } from './interfaces/category.interface';
 import { CategoriesService } from './categories.service';
 import { FindAllCategoryDto } from './dto/findAll-category.dto';
 
