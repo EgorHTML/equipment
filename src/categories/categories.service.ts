@@ -8,10 +8,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Pool, PoolClient } from 'pg';
-import { PG_CONNECTION } from '../core/database/database.provider';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ICategory } from './interfaces/category.interface';
+import { PG_CONNECTION } from 'src/core/database/database.provider';
 
 @Injectable()
 export class CategoriesService {
@@ -58,16 +58,16 @@ export class CategoriesService {
     }
   }
 
-  async findAll(companyId?: number): Promise<ICategory[]> {
+  async findAll(): Promise<ICategory[]> {
     const client = await this.pool.connect();
     try {
       let sql = 'SELECT * FROM categories';
       const params: number[] = [];
-      if (companyId) {
-        sql += ' WHERE company_id = $1';
-        params.push(companyId);
-      }
-      sql += ' ORDER BY name;'; // Сортировка по имени
+      // if (companyId) {
+      //   sql += ' WHERE company_id = $1';
+      //   params.push(companyId);
+      // }
+      // sql += ' ORDER BY name;'; // Сортировка по имени
       const result = await client.query(sql, params);
       return result.rows;
     } catch (error) {
