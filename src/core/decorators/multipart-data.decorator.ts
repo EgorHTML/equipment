@@ -7,12 +7,60 @@ import {
 import { FastifyRequest } from 'fastify';
 import { ProcessedFile } from '../interfaces/processed-file.interface';
 
+interface FastifyMultipartPart {
+  type: 'field' | 'file';
+  fieldname: string;
+  value?: any; 
+  filename?: string; 
+  encoding?: string; 
+  mimetype?: string; 
+  file?: NodeJS.ReadableStream; 
+  fields?: any; 
+  toBuffer?: () => Promise<Buffer>; 
+}
+
 export interface MultipartData {
   fields: { [key: string]: any };
   files: Record<string, ProcessedFile | ProcessedFile[]>;
 }
 
 const logger = new Logger('MultipartDataDecorator');
+
+async function processSingleFilePart(
+  part: FastifyMultipartPart,
+): Promise<ProcessedFile | null> {
+  if (part && part.type === 'file' && typeof part.toBuffer === 'function') {
+    const fileFieldname = part.fieldname;
+    if (typeof fileFieldname !== 'string') {
+      logger.warn(
+        `Skipping file part with invalid fieldname: filename='${part.filename}'`,
+      );
+      return null;
+    }
+    try {
+      const buffer = await part.toBuffer();
+      const fileInfo: ProcessedFile = {
+        fieldname: fileFieldname,
+        originalname: part.filename || 'unknown', 
+        encoding: part.encoding || '', 
+        mimetype: part.mimetype || 'application/octet-stream', 
+        buffer: buffer,
+        size: buffer.length,
+      };
+      
+      return fileInfo;
+    } catch (error) {
+      logger.error(
+        `Failed to process file part '${fileFieldname}' to buffer: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        `Failed to process uploaded file: ${part.filename || fileFieldname}`,
+      );
+    }
+  }
+  return null; 
+}
 
 export const MultipartData = createParamDecorator(
   async (data: unknown, ctx: ExecutionContext): Promise<MultipartData> => {
@@ -30,62 +78,56 @@ export const MultipartData = createParamDecorator(
 
     for (const key in body) {
       if (Object.prototype.hasOwnProperty.call(body, key)) {
-        const part = body[key];
+        const partOrParts = body[key]; 
 
-        if (part && part.type === 'field' && part.value !== undefined) {
-          const fieldName = part.fieldname || key;
-          if (typeof fieldName === 'string') {
-            logger.debug(`Processing field: ${fieldName} = ${part.value}`);
-            result.fields[fieldName] = part.value;
-          } else {
-            logger.warn(
-              `Skipping field part with invalid fieldname: key='${key}'`,
-            );
-          }
-        } else if (
-          part &&
-          part.type === 'file' &&
-          typeof part.toBuffer === 'function'
-        ) {
-          const fileFieldname = part.fieldname;
-          if (typeof fileFieldname !== 'string') {
-            logger.warn(
-              `Skipping file part with invalid fieldname: key='${key}', filename='${part.filename}'`,
-            );
-            continue;
-          }
+        if (Array.isArray(partOrParts)) {
+          const processedFilesArray: ProcessedFile[] = [];
+          let fieldNameFromArray: string | null = null;
 
-          try {
-            const buffer = await part.toBuffer();
-            const fileInfo: ProcessedFile = {
-              fieldname: fileFieldname,
-              originalname: part.filename,
-              encoding: part.encoding,
-              mimetype: part.mimetype,
-              buffer: buffer,
-              size: buffer.length,
-            };
-
-            if (result.files[fileFieldname]) {
-              if (Array.isArray(result.files[fileFieldname])) {
-                (result.files[fileFieldname] as ProcessedFile[]).push(fileInfo);
-              } else {
-                result.files[fileFieldname] = [
-                  result.files[fileFieldname] as ProcessedFile,
-                  fileInfo,
-                ];
+          for (const part of partOrParts) {
+            const processedFile = await processSingleFilePart(part);
+            if (processedFile) {
+              processedFilesArray.push(processedFile);
+              if (!fieldNameFromArray) {
+                fieldNameFromArray = processedFile.fieldname; 
               }
             } else {
-              result.files[fileFieldname] = fileInfo;
+              logger.warn(
+                `Item in array for key '${key}' is not a processable file part.`,
+              );
             }
-          } catch (error) {
-            logger.error(
-              `Failed to process file part '${key}' to buffer: ${error.message}`,
-              error.stack,
+          }
+
+          if (processedFilesArray.length > 0 && fieldNameFromArray) {
+            result.files[fieldNameFromArray] = processedFilesArray;
+           
+          } else if (processedFilesArray.length > 0) {
+            logger.warn(
+              `Could not determine fieldname for array of files under key '${key}'. Skipping.`,
             );
-            throw new InternalServerErrorException(
-              `Failed to process uploaded file: ${part.filename || key}`,
-            );
+          }
+        } else {
+          const part = partOrParts;
+          if (part && part.type === 'field' && part.value !== undefined) {
+            const fieldName = part.fieldname || key;
+            if (typeof fieldName === 'string') {
+              logger.debug(`Processing field: ${fieldName} = ${part.value}`);
+              result.fields[fieldName] = part.value;
+            } else {
+              logger.warn(
+                `Skipping field part with invalid fieldname: key='${key}'`,
+              );
+            }
+          } else {
+            const processedFile = await processSingleFilePart(part);
+            if (processedFile) {
+              result.files[processedFile.fieldname] = processedFile;
+           
+            } else if (part && part.type !== 'field') {
+              logger.warn(
+                `Skipping unexpected single part in body: key='${key}', type='${part?.type}'`,
+              );
+            }
           }
         }
       }
