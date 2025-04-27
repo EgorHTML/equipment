@@ -14,5 +14,5 @@ export class CreateCategoryDto {
 
   @IsInt()
   @IsPositive()
-  company_id: number; // ID из внешней системы
+  company_id: number; 
 }

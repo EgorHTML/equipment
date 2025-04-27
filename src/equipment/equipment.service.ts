@@ -18,7 +18,7 @@ export class EquipmentService {
     SELECT
         e.id,
         e.parent_id,
-        -- Добавляем все остальные поля из equipment, которые нужны в финальном результате
+      
         e.name,
         e.serial_number,
         e.warranty_end,
@@ -28,24 +28,23 @@ export class EquipmentService {
         e.created_at,
         e.updated_at,
         1 as level, 
-        -- Агрегируем ВСЕ поля из таблицы files в JSONB массив объектов
+        
         COALESCE(
-            (SELECT jsonb_agg(f.* ORDER BY f.created_at) -- Собираем ВСЕ поля (f.*) и сортируем по дате создания для предсказуемости
+            (SELECT jsonb_agg(f.* ORDER BY f.created_at) 
              FROM equipment_files ef
              JOIN files f ON ef.file_id = f.id
              WHERE ef.equipment_id = e.id),
-            '[]'::jsonb -- Если файлов нет, возвращаем пустой JSONB массив
-        ) as files -- Сразу называем поле 'files'
+            '[]'::jsonb 
+        ) as files 
     FROM equipment e
-    WHERE e.parent_id IS NULL -- Начинаем с корневых узлов
+    WHERE e.parent_id IS NULL 
 
     UNION ALL
 
-    -- Рекурсивная часть: выбираем дочерние узлы и агрегируем их файлы
     SELECT
         e_child.id,
         e_child.parent_id,
-        -- Поля оборудования для дочерних узлов
+       
         e_child.name,
         e_child.serial_number,
         e_child.warranty_end,
@@ -54,8 +53,8 @@ export class EquipmentService {
         e_child.category_id,
         e_child.created_at,
         e_child.updated_at,
-        eh.level + 1, -- Увеличиваем уровень
-         -- Агрегация файлов для дочерних узлов (аналогично якорной части)
+        eh.level + 1, 
+        
         COALESCE(
             (SELECT jsonb_agg(f.* ORDER BY f.created_at)
              FROM equipment_files ef
@@ -65,9 +64,9 @@ export class EquipmentService {
         ) as files
     FROM equipment e_child
     INNER JOIN equipment_hierarchy eh ON e_child.parent_id = eh.id
-    WHERE eh.level < 5 -- Ограничение глубины рекурсии (настройте при необходимости)
+    WHERE eh.level < 5 
 )
--- Финальный SELECT из CTE: выбираем все поля из иерархии и добавляем внешние данные
+
 SELECT
     eh.id,
     eh.parent_id,
@@ -79,20 +78,18 @@ SELECT
     eh.category_id,
     eh.created_at,
     eh.updated_at,
-    -- eh.level, -- Уровень можно убрать, если он не нужен в финальном результате
-    eh.files, -- Поле files уже содержит нужный JSONB массив
+    -- eh.level, 
+    eh.files, 
     cat.name as category_name,
     fe.quantity
 FROM equipment_hierarchy eh
 LEFT JOIN categories cat ON eh.category_id = cat.id
 LEFT JOIN finite_equipment fe ON eh.id = fe.equipment_id
-ORDER BY eh.level, eh.name; -- Сортируем для консистентности сборки дерева
+ORDER BY eh.level, eh.name;
       `;
 
       const result = await client.query(treeSql);
 
-      // Используем существующий хелпер buildTree, передавая null в качестве ID родителя,
-      // чтобы построить структуру, начиная с корневых узлов.
       return this.buildTree(result.rows, null);
 
     } catch (error) {
