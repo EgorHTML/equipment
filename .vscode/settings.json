@@ -5,7 +5,7 @@
   },
   "eslint.validate": ["typescript"],
   "[typescript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": false
   },
   "prettier.requireConfig": true

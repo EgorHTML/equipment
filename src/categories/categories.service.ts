@@ -22,7 +22,6 @@ export class CategoriesService {
   async create(createDto: CreateCategoryDto): Promise<any> {
     const client = await this.pool.connect();
     try {
-      // Проверка на уникальность имени в рамках company_id (опционально, если нужно)
       const checkSql =
         'SELECT id FROM categories WHERE name = $1 AND company_id = $2';
       const checkResult = await client.query(checkSql, [
@@ -123,12 +122,11 @@ export class CategoriesService {
 
       if (fieldsToUpdate.length === 0) {
         this.logger.warn(`Update called for category ${id} with no changes.`);
-        return this.findOne(id); // Возвращаем текущее состояние
+        return this.findOne(id); 
       }
 
-      // Проверка на уникальность имени при обновлении (если нужно)
       if (updateDto.name) {
-        const currentCategory = await this.findOne(id); // Получаем текущую company_id
+        const currentCategory = await this.findOne(id); 
         const checkSql =
           'SELECT id FROM categories WHERE name = $1 AND company_id = $2 AND id != $3';
         const checkResult = await client.query(checkSql, [
@@ -176,7 +174,6 @@ export class CategoriesService {
   async remove(id: number): Promise<void> {
     const client = await this.pool.connect();
     try {
-      // Проверяем, используется ли категория в оборудовании
       const checkUsageSql =
         'SELECT 1 FROM equipment WHERE category_id = $1 LIMIT 1';
       const usageResult = await client.query(checkUsageSql, [id]);

@@ -17,7 +17,7 @@ export const configuration = registerAs('app', () => ({
     port: parseInt(process.env.MINIO_PORT ?? '81', 10),
     accessKey: process.env.MINIO_ACCESS_KEY,
     secretKey: process.env.MINIO_SECRET_KEY,
-    useSSL: process.env.MINIO_USE_SSL === 'true', // Преобразуем строку в boolean
+    useSSL: process.env.MINIO_USE_SSL === 'true', 
     bucketName: process.env.MINIO_BUCKET_NAME,
   },
 
