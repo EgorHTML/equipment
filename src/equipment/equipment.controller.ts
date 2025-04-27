@@ -20,6 +20,7 @@ import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { LinkEquipmentTicketDto } from './dto/link-equipment-ticket.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { MultipartData } from 'src/core/decorators/multipart-data.decorator';
 
 @ApiTags('Оборудование (Equipment)')
 @Controller('equipment')
@@ -31,9 +32,7 @@ export class EquipmentController {
   ) {}
 
   @Post()
-  async create(
-    @Body() createEquipmentDto: CreateEquipmentDto
-  ) {
+  async create(@Body() createEquipmentDto: CreateEquipmentDto) {
     const newEquipment = await this.equipmentService.create(createEquipmentDto);
     return newEquipment;
   }
@@ -91,19 +90,11 @@ export class EquipmentController {
   }
 
   @Post(':id/files')
-  async uploadAndLinkFiles(
-    @Param('id', ParseIntPipe) equipmentId: number,
-    @UploadedFiles() files: Express.Multer.File[],
+  async linkFile(
+    @MultipartData() data: MultipartData,
+    @Param('id', ParseIntPipe) id: number,
   ) {
-    if (!files || files.length === 0) {
-      throw new BadRequestException('No files uploaded.');
-    }
-    const userId = 1; // Заменить на реальный ID пользователя
-    const fileIds = await this.filesService.uploadAndLinkFiles(
-      files,
-      equipmentId,
-      userId,
-    );
-    return { message: 'Files uploaded and linked successfully', fileIds };
+
+    await this.filesService.uploadAndLinkFiles([data.files.file].flat(), id, 1);
   }
 }
