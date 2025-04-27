@@ -61,7 +61,7 @@ export class FilesController {
   @Post('link/equipment/:equipmentId')
   async linkFile(
     @MultipartData() data:MultipartData,
-    @Param('equipmentId') equipmentId
+    @Param('equipmentId',ParseIntPipe) equipmentId
   ) {
     await this.filesService.uploadAndLinkFiles([data.files.file].flat(),equipmentId,1);
   }
