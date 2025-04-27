@@ -19,7 +19,9 @@ import { FilesService } from '../files/files.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { LinkEquipmentTicketDto } from './dto/link-equipment-ticket.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Оборудование (Equipment)')
 @Controller('equipment')
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class EquipmentController {
@@ -30,20 +32,9 @@ export class EquipmentController {
 
   @Post()
   async create(
-    @Body() createEquipmentDto: CreateEquipmentDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @Body() createEquipmentDto: CreateEquipmentDto
   ) {
     const newEquipment = await this.equipmentService.create(createEquipmentDto);
-
-    if (files && files.length > 0) {
-      const uploadedFileIds = await this.filesService.uploadAndLinkFiles(
-        files,
-        newEquipment.id,
-        1, // ID из токена
-      );
-      newEquipment.file_ids = uploadedFileIds;
-    }
-
     return newEquipment;
   }
 

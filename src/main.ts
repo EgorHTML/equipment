@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import fastifyMultipart from '@fastify/multipart';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const adapter = new FastifyAdapter();
@@ -28,6 +29,16 @@ async function bootstrap() {
     adapter,
     { logger: ['log', 'error', 'warn', 'debug', 'verbose'] },
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Equipment API')
+    .setDescription('API для модуля учета оборудования HelpDesk')
+    .setVersion('1.0')
+    // .addTag('cats')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup('swagger', app, document);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3000;
