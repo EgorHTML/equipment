@@ -20,9 +20,10 @@ export class Equipment {
   @TreeChildren()
   children: Equipment[];
 
+  @Column()
   @ManyToOne(() => Category, { nullable: false })
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category_id: number;
 
   @Column()
   name: string;
@@ -33,7 +34,7 @@ export class Equipment {
   @Column({ nullable: true, type: 'bigint' })
   warranty_end: number | null;
 
-  @Column({ type: 'text',nullable: true })
+  @Column({ type: 'text', nullable: true })
   article: string | null;
 
   @Column({ type: 'text', nullable: true })
