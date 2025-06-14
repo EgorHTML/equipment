@@ -1,5 +1,5 @@
 import { Module, Global } from '@nestjs/common';
-import { databaseProvider, PG_CONNECTION } from './database.provider';
+import { databaseProvider } from './database.provider';
 import { ConfigModule } from '@nestjs/config';
 
 @Global()

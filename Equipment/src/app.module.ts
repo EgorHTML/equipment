@@ -8,7 +8,6 @@ import { EquipmentModule } from './equipment/equipment.module';
 
 import { configuration } from './config/configuration';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({    

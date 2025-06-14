@@ -1,14 +1,18 @@
-import { Body, Controller, Get, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
-import { FindAllCategoryDto } from './dto/findAll-category.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller('categories')
-export class CategoriesController{
-    constructor(private categoriesService: CategoriesService) {}
+export class CategoriesController {
+  constructor( private categoriesService: CategoriesService) {}
 
+  @Get()
+  async findAll() {
+    return await this.categoriesService.findAll();
+  }
 
-    @Get()
-    async findAll(@Res() res) {
-        res.send(await this.categoriesService.findAll())
-      }
+  @Post()
+  async create(@Body() data: CreateCategoryDto) {
+     return this.categoriesService.create(data)
+  }
 }

@@ -21,8 +21,7 @@ export class CreateEquipmentDto {
   serial_number: string; 
 
   @IsOptional()
-  @IsDateString()
-  warranty_end?: string; 
+  warranty_end?: number; 
 
   @IsOptional()
   @IsString()

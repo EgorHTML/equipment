@@ -1,6 +1,8 @@
 services:
   equipment-app:
-    build: ./Equipment
+    build: 
+      context: ./Equipment
+      target:  ${TARGET:-dev} 
     container_name: equipment_app
     ports:
       - "3000:3000"
@@ -17,10 +19,9 @@ services:
       POSTGRES_USER: ${EQUIPMENT_DB_USER:-eq_user}
       POSTGRES_PASSWORD: ${EQUIPMENT_DB_PASSWORD:-eq_password}
       POSTGRES_DB: ${EQUIPMENT_DB_NAME:-equipment_main_db}
-
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
-
       FILE_SERVICE_URL: http://file-app:3001
+      CHOKIDAR_USEPOLLING: true
     volumes:
       - ./Equipment:/usr/src/app 
       - /usr/src/app/node_modules 
@@ -28,7 +29,9 @@ services:
       - equipment_network
 
   file-app:
-    build: ./File_Service
+    build: 
+      context: ./File_Service
+      target: ${TARGET:-dev}
     container_name: file_app
     ports:
       - "3001:3001"
@@ -64,7 +67,9 @@ services:
       - equipment_network
 
   reports-app:
-    build: ./Reports
+    build: 
+      context: ./Reports
+      target:  ${TARGET:-dev}
     container_name: reports_app
     ports:
       - "3002:3002"

@@ -67,7 +67,7 @@ export const MultipartData = createParamDecorator(
     const request = ctx.switchToHttp().getRequest<FastifyRequest>();
     const body = request.body as any;
 
-    if (!request.isMultipart() || typeof body !== 'object' || body === null) {
+    if (typeof body !== 'object' || body === null) {
       logger.warn(
         'Request is not multipart or body is not an object. Returning empty data.',
       );
