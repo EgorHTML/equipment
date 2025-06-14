@@ -10,401 +10,101 @@ import {
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { LinkEquipmentTicketDto } from './dto/link-equipment-ticket.dto';
-import { Repository } from 'typeorm';
+import { Repository, TreeRepository } from 'typeorm';
 import { Equipment } from './equipment.entity';
 
 @Injectable()
 export class EquipmentService {
   private readonly logger = new Logger(EquipmentService.name);
-    pool:any
+  pool: any;
+  private treeRepository: TreeRepository<Equipment>;
+
   constructor(
-    @Inject('EQUIPMENT_REPOSITORY') private equipmentProviders: Repository<Equipment>,
-  ) {}
+    @Inject('EQUIPMENT_REPOSITORY')
+    private equipmentProviders: Repository<Equipment>,
+  ) {
+    this.treeRepository =
+      equipmentProviders.manager.getTreeRepository(Equipment);
+  }
 
   async findAllWithChildren(): Promise<any[]> {
     try {
-        return await this.equipmentProviders.find()
+      return await this.equipmentProviders.manager
+        .getTreeRepository(Equipment)
+        .findTrees();
     } catch (error) {
-        this.logger.error(error)
-        return error
-    }
-//     const client = await this.pool.connect();
-//     try {
-//       const treeSql = `WITH RECURSIVE equipment_hierarchy AS (
-//     SELECT
-//         e.id,
-//         e.parent_id,
-      
-//         e.name,
-//         e.serial_number,
-//         e.warranty_end,
-//         e.article,
-//         e.description,
-//         e.category_id,
-//         e.created_at,
-//         e.updated_at,
-//         1 as level
-        
-//     FROM equipment_schema.equipment e
-//     WHERE e.parent_id IS NULL 
-
-//     UNION ALL
-
-//     SELECT
-//         e_child.id,
-//         e_child.parent_id,
-//         e_child.name,
-//         e_child.serial_number,
-//         e_child.warranty_end,
-//         e_child.article,
-//         e_child.description,
-//         e_child.category_id,
-//         e_child.created_at,
-//         e_child.updated_at,
-//         eh.level + 1
- 
-//     FROM equipment_schema.equipment e_child
-//     INNER JOIN equipment_hierarchy eh ON e_child.parent_id = eh.id
-//     WHERE eh.level < 5 
-// )
-
-// SELECT
-//     eh.id,
-//     eh.parent_id,
-//     eh.name,
-//     eh.serial_number,
-//     eh.warranty_end,
-//     eh.article,
-//     eh.description,
-//     eh.category_id,
-//     eh.created_at,
-//     eh.updated_at,
-//     -- eh.level, 
-//     cat.name as category_name,
-//     fe.quantity
-// FROM equipment_hierarchy eh
-// LEFT JOIN equipment_schema.categories cat ON eh.category_id = cat.id
-// LEFT JOIN equipment_schema.finite_equipment fe ON eh.id = fe.equipment_id
-// ORDER BY eh.level, eh.name;
-//       `;
-
-//       const result = await client.query(treeSql);
-
-//       return this.buildTree(result.rows, null);
-//     } catch (error) {
-//       this.logger.error(
-//         `Failed to find all equipment with children: ${error.message}`,
-//         error.stack,
-//       );
-//       throw new InternalServerErrorException(
-//         'Failed to retrieve equipment tree',
-//       );
-//     } finally {
-//       client.release();
-//     }
-  }
-
-  async create(createDto: CreateEquipmentDto): Promise<any> {
-    console.log(createDto,'createDto');
-    
-    return await this.equipmentProviders.save(createDto)
-  }
-
-  async findOne(id: number): Promise<any> {
-    
-    // try {
-    //   const equipmentSql = `
-    //         SELECT
-    //             e.*,
-    //             fe.quantity,
-    //             cat.name as category_name,
-    //             p.name as parent_name
-    //         FROM equipment e
-    //         LEFT JOIN finite_equipment fe ON e.id = fe.equipment_id
-    //         LEFT JOIN categories cat ON e.category_id = cat.id
-    //         LEFT JOIN equipment p ON e.parent_id = p.id
-    //         WHERE e.id = $1;
-    //     `;
-    //   const equipmentResult = await client.query(equipmentSql, [id]);
-    //   if (equipmentResult.rowCount === 0) {
-    //     throw new NotFoundException(`Equipment with ID ${id} not found`);
-    //   }
-    //   const equipment = equipmentResult.rows[0];
-
-    //   const filesSql = `
-    //         SELECT f.*
-    //         FROM files f
-    //         JOIN equipment_files ef ON f.id = ef.file_id
-    //         WHERE ef.equipment_id = $1;
-    //     `;
-    //   const filesResult = await client.query(filesSql, [id]);
-    //   equipment.files = filesResult.rows;
-
-    //   const usersSql =
-    //     'SELECT user_id FROM equipment_users WHERE equipment_id = $1;';
-    //   const usersResult = await client.query(usersSql, [id]);
-    //   equipment.user_ids = usersResult.rows.map((row) => row.user_id);
-
-    //   const companiesSql =
-    //     'SELECT company_id FROM equipment_company WHERE equipment_id = $1;';
-    //   const companiesResult = await client.query(companiesSql, [id]);
-    //   equipment.company_ids = companiesResult.rows.map((row) => row.company_id);
-
-    //   const childrenTreeSql = `
-    //      WITH RECURSIVE equipment_hierarchy AS (
-    //          -- Anchor member: Выбираем прямых детей указанного ID
-    //          SELECT
-    //              e_child.id,
-    //              e_child.parent_id,
-    //              e_child.name,
-    //              e_child.serial_number,
-    //              1 as level -- Начинаем с уровня 1 для прямых детей
-    //          FROM equipment e_child
-    //          WHERE e_child.parent_id = $1 -- Ищем детей нашего equipment.id
-
-    //          UNION ALL
-
-    //          -- Recursive member: Присоединяем следующие уровни детей
-    //          SELECT
-    //              e_next.id,
-    //              e_next.parent_id,
-    //              e_next.name,
-    //              e_next.serial_number,
-    //              eh.level + 1
-    //          FROM equipment e_next
-    //          INNER JOIN equipment_hierarchy eh ON e_next.parent_id = eh.id
-    //          WHERE eh.level < 10 -- Ограничение глубины рекурсии для безопасности (настройте при необходимости)
-    //      )
-    //      SELECT id, parent_id, name, serial_number, level
-    //      FROM equipment_hierarchy
-    //      ORDER BY level, name; -- Сортируем для удобства и предсказуемости
-    //  `;
-    //   const childrenResult = await client.query(childrenTreeSql, [id]);
-
-    //   equipment.children = this.buildTree(childrenResult.rows, id);
-
-    //   return equipment;
-    // } catch (error) {
-    //   this.logger.error(
-    //     `Failed to find equipment ${id}: ${error.message}`,
-    //     error.stack,
-    //   );
-    //   if (error instanceof NotFoundException) throw error;
-    //   throw new InternalServerErrorException(
-    //     'Failed to retrieve equipment details',
-    //   );
-    // } finally {
-    //   client.release();
-    // }
-  }
-
-  private buildTree(nodes: any[], rootParentId: number | null): any[] {
-    const tree: any[] = [];
-    const map = {};
-
-    nodes.forEach((nodeData) => {
-      map[nodeData.id] = { ...nodeData, children: [] };
-    });
-
-    nodes.forEach((nodeData) => {
-      const node = map[nodeData.id];
-      if (nodeData.parent_id === rootParentId) {
-        tree.push(node);
-      } else if (map[nodeData.parent_id]) {
-        map[nodeData.parent_id].children.push(node);
-      }
-    });
-
-    return tree;
-  }
-
-  async getEquipmentTree(rootId: number | null = null): Promise<any[]> {
-    const client = await this.pool.connect();
-    try {
-      const treeSql = `
-        WITH RECURSIVE equipment_hierarchy AS (
-            SELECT
-                id,
-                parent_id,
-                name,
-                serial_number,
-                category_id,
-                1 as level
-            FROM equipment
-            WHERE ${rootId === null ? 'parent_id IS NULL' : 'id = $1'} -- Стартуем с корня или указанного ID
-
-            UNION ALL
-
-            SELECT
-                e.id,
-                e.parent_id,
-                e.name,
-                e.serial_number,
-                e.category_id,
-                eh.level + 1
-            FROM equipment e
-            INNER JOIN equipment_hierarchy eh ON e.parent_id = eh.id
-            WHERE eh.level < 10 -- Ограничение глубины рекурсии
-        )
-        SELECT id, parent_id, name, serial_number, level FROM equipment_hierarchy ORDER BY level, name;
-      `;
-      const params = rootId === null ? [] : [rootId];
-      const result = await client.query(treeSql, params);
-
-      return this.buildTree(result.rows, rootId);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get equipment tree (root ${rootId}): ${error.message}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        'Failed to retrieve equipment tree',
-      );
-    } finally {
-      client.release();
+      this.logger.error(error);
+      return error;
     }
   }
 
-  async update(id: number, updateDto: UpdateEquipmentDto): Promise<any> {
-    const client = await this.pool.connect();
+  async create(createDto: CreateEquipmentDto): Promise<Equipment> {
     try {
-      await client.query('BEGIN');
+      const equipment = this.treeRepository.create(createDto);
 
-      const checkExistSql =
-        'SELECT id, serial_number FROM equipment WHERE id = $1 FOR UPDATE';
-      const existResult = await client.query(checkExistSql, [id]);
-      if (existResult.rowCount === 0) {
-        throw new NotFoundException(`Equipment with ID ${id} not found`);
-      }
-      const currentSerialNumber = existResult.rows[0].serial_number;
-
-      if (
-        updateDto.serial_number &&
-        updateDto.serial_number !== currentSerialNumber
-      ) {
-        const checkSerialSql =
-          'SELECT id FROM equipment WHERE serial_number = $1 AND id != $2';
-        const serialCheckResult = await client.query(checkSerialSql, [
-          updateDto.serial_number,
-          id,
-        ]);
-        if (serialCheckResult.rowCount && serialCheckResult.rowCount > 0) {
-          throw new ConflictException(
-            `Equipment with serial number ${updateDto.serial_number} already exists.`,
+      if (createDto.parent_id && createDto.parent_id > 0) {
+        equipment.parent = await this.treeRepository.findOne({
+          where: { id: createDto.parent_id },
+        });
+        if (!equipment.parent) {
+          throw new NotFoundException(
+            `Parent equipment ${createDto.parent_id} not found`,
           );
         }
       }
 
-      const fieldsToUpdate: string[] = [];
-      const values = [id];
-      let valueIndex = 2;
-
-      Object.keys(updateDto).forEach((key) => {
-        if (
-          key !== 'quantity' &&
-          key !== 'user_ids' &&
-          key !== 'company_ids' &&
-          updateDto[key] !== undefined
-        ) {
-          const snakeCaseKey = key.replace(
-            /[A-Z]/g,
-            (letter) => `_${letter.toLowerCase()}`,
-          );
-          if (key === 'parent_id' && updateDto.parent_id === null) {
-            fieldsToUpdate.push(`${snakeCaseKey} = NULL`);
-          } else {
-            fieldsToUpdate.push(`${snakeCaseKey} = $${valueIndex}`);
-            values.push(updateDto[key]);
-            valueIndex++;
-          }
-        }
-      });
-
-      if (fieldsToUpdate.length > 0) {
-        fieldsToUpdate.push('updated_at = CURRENT_TIMESTAMP');
-        const updateEquipmentSql = `
-                UPDATE equipment
-                SET ${fieldsToUpdate.join(', ')}
-                WHERE id = $1
-                RETURNING *;
-            `;
-        await client.query(updateEquipmentSql, values);
-      } else if (
-        updateDto.quantity === undefined &&
-        !updateDto.user_ids &&
-        !updateDto.company_ids
-      ) {
-        await client.query('ROLLBACK');
-        this.logger.warn(`Update called for equipment ${id} with no changes.`);
-        return this.findOne(id);
-      }
-
-      if (updateDto.quantity !== undefined && updateDto.quantity !== null) {
-        if (updateDto.quantity < 0) {
-          throw new BadRequestException('Quantity cannot be negative.');
-        }
-        const upsertFiniteSql = `
-                INSERT INTO finite_equipment (equipment_id, quantity)
-                VALUES ($1, $2)
-                ON CONFLICT (equipment_id) DO UPDATE SET quantity = EXCLUDED.quantity;
-            `;
-        await client.query(upsertFiniteSql, [id, updateDto.quantity]);
-      }
-
-      if (updateDto.user_ids !== undefined) {
-        await client.query(
-          'DELETE FROM equipment_users WHERE equipment_id = $1',
-          [id],
-        );
-        if (updateDto.user_ids.length > 0) {
-          const userValues = updateDto.user_ids
-            .map((userId) => `(${userId}, ${id})`)
-            .join(',');
-          const insertUsersSql = `INSERT INTO equipment_users (user_id, equipment_id) VALUES ${userValues}`;
-          await client.query(insertUsersSql);
-        }
-      }
-
-      if (updateDto.company_ids !== undefined) {
-        await client.query(
-          'DELETE FROM equipment_company WHERE equipment_id = $1',
-          [id],
-        );
-        if (updateDto.company_ids.length > 0) {
-          const companyValues = updateDto.company_ids
-            .map((companyId) => `(${companyId}, ${id})`)
-            .join(',');
-          const insertCompaniesSql = `INSERT INTO equipment_company (company_id, equipment_id) VALUES ${companyValues}`;
-          await client.query(insertCompaniesSql);
-        }
-      }
-
-      await client.query('COMMIT');
-
-      return this.findOne(id);
+      return await this.treeRepository.save(equipment);
     } catch (error) {
-      await client.query('ROLLBACK');
-      this.logger.error(
-        `Failed to update equipment ${id}: ${error.message}`,
-        error.stack,
-      );
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException ||
-        error instanceof ConflictException
-      ) {
-        throw error;
+      if (['23505','23503'].includes(error.code)) {
+        throw new ConflictException(error.detail);
       }
-      if (error.code === '23503') {
-        if (error.constraint === 'fk_category')
-          throw new BadRequestException(`Category ID does not exist.`);
-        if (error.constraint === 'equipment_parent_id_fkey')
-          throw new BadRequestException(`Parent equipment ID does not exist.`);
-      }
-      throw new InternalServerErrorException('Failed to update equipment');
-    } finally {
-      client.release();
+      throw error;
     }
+  }
+
+  async findOne(id: number): Promise<Equipment> {
+    const equipment = await this.treeRepository.findOne({
+      where: { id },
+      relations: ['children','parent'],
+    });
+    
+    if(equipment){
+      return equipment
+    }else{
+      throw new NotFoundException()
+    }
+  }
+
+  async update(id: number, updateDto: UpdateEquipmentDto): Promise<Equipment> {
+    const equipment = await this.treeRepository.findOne({ 
+      where: { id },
+      relations: ['parent'] 
+    });
+
+    if (!equipment) {
+      throw new NotFoundException(`Equipment ${id} not found`);
+    }
+
+    // Обновление родителя
+    if (updateDto.parent_id) {
+      if (updateDto.parent_id === null) {
+        equipment.parent = null;
+        equipment.parentId = null;
+      } else {
+        const newParent = await this.treeRepository.findOne({
+          where: { id: updateDto.parent_id }
+        });
+        if (!newParent) {
+          throw new NotFoundException(`New parent not found`);
+        }
+        equipment.parent = newParent;
+        equipment.parentId = newParent.id;
+      }
+    }
+
+    // Обновление остальных полей
+    Object.assign(equipment, updateDto);
+    return this.treeRepository.save(equipment);
   }
 
   async remove(id: number): Promise<void> {

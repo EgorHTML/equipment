@@ -7,18 +7,24 @@ import {
   JoinColumn,
   TreeParent,
   TreeChildren,
+  Tree,
+  Relation,
 } from 'typeorm';
 
+@Tree("closure-table")
 @Entity()
 export class Equipment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @TreeParent()
-  parent: Equipment | null;
+  @TreeParent({ onDelete: 'SET NULL' })
+  parent: Relation<Equipment> | null;
 
-  @TreeChildren()
-  children: Equipment[];
+  @TreeChildren({ cascade: true })
+  children: Relation<Equipment>[];
+
+  @Column({ name: 'parent_id', type: 'int', nullable: true })
+  parentId: number | null;
 
   @Column()
   @ManyToOne(() => Category, { nullable: false })
