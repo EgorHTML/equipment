@@ -9,6 +9,8 @@ import {
   TreeChildren,
   Tree,
   Relation,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 
 @Tree('closure-table')
@@ -22,7 +24,6 @@ export class Equipment {
 
   @TreeChildren({ cascade: true })
   children: Relation<Equipment>[];
-
 
   @Column()
   @ManyToOne(() => Category, { nullable: false })
@@ -55,4 +56,16 @@ export class Equipment {
     default: () => 'EXTRACT(EPOCH FROM NOW())::bigint',
   })
   updated_at: number;
+
+  @BeforeInsert()
+  updateTimestampsOnInsert() {
+    const now = Math.floor(Date.now() / 1000);
+    this.created_at = now;
+    this.updated_at = now;
+  }
+
+  @BeforeUpdate()
+  updateTimestampOnUpdate() {
+    this.updated_at = Math.floor(Date.now() / 1000);
+  }
 }
