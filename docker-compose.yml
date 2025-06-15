@@ -123,7 +123,7 @@ services:
       POSTGRES_DB: ${EQUIPMENT_DB_NAME:-equipment_main_db}
     volumes:
       - postgres_eq_data:/var/lib/postgresql/data
-      - ./Equipment/init-db.sql:/docker-entrypoint-initdb.d/init.sql # Скрипт инициализации для этой БД
+      # - ./Equipment/init-db.sql:/docker-entrypoint-initdb.d/init.sql # Скрипт инициализации для этой БД
     networks:
       - equipment_network
     healthcheck:
@@ -141,7 +141,7 @@ services:
       POSTGRES_DB: ${FILE_DB_NAME:-files_db}
     volumes:
       - postgres_file_data:/var/lib/postgresql/data
-      - ./File_Service/init-db.sql:/docker-entrypoint-initdb.d/init.sql # Скрипт инициализации
+      # - ./File_Service/init-db.sql:/docker-entrypoint-initdb.d/init.sql # Скрипт инициализации
     networks:
       - equipment_network
     healthcheck:
