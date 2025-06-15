@@ -75,6 +75,7 @@ export class EquipmentService {
     }
 
     Object.assign(equipment, updateDto);
+
     return this.treeRepository.save(equipment);
   }
 

@@ -11,9 +11,8 @@ import {
 
 export class UpdateEquipmentDto {
   @IsOptional()
-  @IsInt()
-  @IsPositive()
-  parent_id?: number;
+  parent?:  { id: number };
+
 
   @IsInt()
   @IsPositive()
