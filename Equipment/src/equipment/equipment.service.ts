@@ -64,39 +64,40 @@ export class EquipmentService {
     }
   }
 
-  async update(id: number, updateDto: UpdateEquipmentDto): Promise<any> {
-    const equipment = await this.treeRepository.findOne({
-      where: { id },
-      relations: ['parent'],
-    });
-
-    const p1 = equipment?.parent;
-    
-    if (!equipment) {
-      throw new NotFoundException(`Equipment ${id} not found`);
-    }
-
-    Object.assign(equipment, updateDto);
-
-    if (updateDto.parent?.id) {
-      const parentEq = await this.treeRepository.findOne({
-        where: { id: updateDto.parent.id },
+  async update(id: number, updateDto: UpdateEquipmentDto): Promise<Equipment> {
+    return this.equipmentProviders.manager.transaction(async (run) => {
+      const equipment = await run.findOne(Equipment, {
+        where: { id },
         relations: ['parent'],
       });
-      
-      if (parentEq?.parent) {
-        parentEq.parent = null;
-        await this.treeRepository.save(parentEq);
 
-        await this.treeRepository.save(equipment);
-
-        if (p1) parentEq.parent = p1;
-
-        return await this.treeRepository.save(parentEq);
+      if (!equipment) {
+        throw new NotFoundException(`Equipment ${id} not found`);
       }
-    }
 
-    return await this.treeRepository.save(equipment);
+      Object.assign(equipment, updateDto);
+
+
+      if (updateDto.parent?.id) {
+        const parentEq = await run.findOne(Equipment, {
+          where: { id: updateDto.parent.id },
+          relations: ['parent'],
+        });
+        const p1 = parentEq?.parent;
+        if (parentEq?.parent) {
+          parentEq.parent = null;
+          await run.save(parentEq);
+
+          const res = await run.save(equipment);
+          if (p1) parentEq.parent = p1;
+
+          await run.save(parentEq);
+          return res;
+        }
+      }
+
+      return run.save(equipment);
+    });
   }
 
   async remove(id: number): Promise<Equipment> {
