@@ -78,83 +78,10 @@ export class EquipmentService {
     return this.treeRepository.save(equipment);
   }
 
-  async remove(id: number): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
+  async remove(id: number): Promise<Equipment> {
+    const equipment = await this.findOne(id);
 
-      const checkLinksSql = `
-            SELECT
-                (SELECT COUNT(*) FROM equipment_ticket WHERE equipment_id = $1) as ticket_count,
-                (SELECT COUNT(*) FROM equipment WHERE parent_id = $1) as children_count;
-        `;
-      const linkResult = await client.query(checkLinksSql, [id]);
-      const { ticket_count, children_count } = linkResult.rows[0];
-
-      if (ticket_count > 0) {
-        throw new BadRequestException(
-          `Cannot delete equipment ${id}: it is linked to ${ticket_count} ticket(s).`,
-        );
-      }
-      if (children_count > 0) {
-        throw new BadRequestException(
-          `Cannot delete equipment ${id}: it has ${children_count} child equipment item(s). Update children first.`,
-        );
-      }
-
-      const filesSql =
-        'SELECT file_id FROM equipment_files WHERE equipment_id = $1';
-      const filesResult = await client.query(filesSql, [id]);
-      const fileIdsToDelete = filesResult.rows.map((row) => row.file_id);
-
-      const deleteSql = 'DELETE FROM equipment WHERE id = $1 RETURNING id';
-      const deleteResult = await client.query(deleteSql, [id]);
-
-      if (deleteResult.rowCount === 0) {
-        throw new NotFoundException(
-          `Equipment with ID ${id} not found for deletion`,
-        );
-      }
-
-      if (fileIdsToDelete.length > 0) {
-        const getFilesInfoSql = `SELECT id, storage_url, file_name FROM files WHERE id = ANY($1::int[])`;
-        const filesInfoResult = await client.query(getFilesInfoSql, [
-          fileIdsToDelete,
-        ]);
-
-        const deleteFilesRecordSql =
-          'DELETE FROM files WHERE id = ANY($1::int[])';
-        await client.query(deleteFilesRecordSql, [fileIdsToDelete]);
-
-        // Удаляем файлы из MinIO (нужен MinioService)
-        // Потом в FileService буду это деать
-        // for (const fileInfo of filesInfoResult.rows) {
-        //    const objectName = this.extractObjectNameFromUrl(fileInfo.storage_url);
-        //    await this.minioService.deleteFile(objectName);
-        // }
-        this.logger.warn(
-          `Need to implement file deletion from MinIO for files: ${JSON.stringify(filesInfoResult.rows)}`,
-        );
-      }
-
-      await client.query('COMMIT');
-      this.logger.log(`Equipment with ID ${id} deleted successfully.`);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      this.logger.error(
-        `Failed to delete equipment ${id}: ${error.message}`,
-        error.stack,
-      );
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to delete equipment');
-    } finally {
-      client.release();
-    }
+    return this.treeRepository.remove(equipment);
   }
 
   async linkToTicket(linkDto: LinkEquipmentTicketDto): Promise<void> {
