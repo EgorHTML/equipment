@@ -2,9 +2,7 @@ import { IsString, IsNotEmpty, IsOptional, IsInt, IsDateString, IsNumber, Min, M
 
 export class CreateEquipmentDto {
   @IsOptional()
-  @IsInt()
-  @IsPositive()
-  parent_id?: number;
+  parent?:  { id: number };
 
   @IsInt()
   @IsPositive()

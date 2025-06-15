@@ -42,20 +42,9 @@ export class EquipmentService {
     try {
       const equipment = this.treeRepository.create(createDto);
 
-      if (createDto.parent_id && createDto.parent_id > 0) {
-        equipment.parent = await this.treeRepository.findOne({
-          where: { id: createDto.parent_id },
-        });
-        if (!equipment.parent) {
-          throw new NotFoundException(
-            `Parent equipment ${createDto.parent_id} not found`,
-          );
-        }
-      }
-
       return await this.treeRepository.save(equipment);
     } catch (error) {
-      if (['23505','23503'].includes(error.code)) {
+      if (['23505', '23503'].includes(error.code)) {
         throw new ConflictException(error.detail);
       }
       throw error;
@@ -65,44 +54,26 @@ export class EquipmentService {
   async findOne(id: number): Promise<Equipment> {
     const equipment = await this.treeRepository.findOne({
       where: { id },
-      relations: ['children','parent'],
+      relations: ['children', 'parent'],
     });
-    
-    if(equipment){
-      return equipment
-    }else{
-      throw new NotFoundException()
+
+    if (equipment) {
+      return equipment;
+    } else {
+      throw new NotFoundException();
     }
   }
 
   async update(id: number, updateDto: UpdateEquipmentDto): Promise<Equipment> {
-    const equipment = await this.treeRepository.findOne({ 
+    const equipment = await this.treeRepository.findOne({
       where: { id },
-      relations: ['parent'] 
+      relations: ['parent'],
     });
 
     if (!equipment) {
       throw new NotFoundException(`Equipment ${id} not found`);
     }
 
-    // Обновление родителя
-    if (updateDto.parent_id) {
-      if (updateDto.parent_id === null) {
-        equipment.parent = null;
-        equipment.parentId = null;
-      } else {
-        const newParent = await this.treeRepository.findOne({
-          where: { id: updateDto.parent_id }
-        });
-        if (!newParent) {
-          throw new NotFoundException(`New parent not found`);
-        }
-        equipment.parent = newParent;
-        equipment.parentId = newParent.id;
-      }
-    }
-
-    // Обновление остальных полей
     Object.assign(equipment, updateDto);
     return this.treeRepository.save(equipment);
   }
