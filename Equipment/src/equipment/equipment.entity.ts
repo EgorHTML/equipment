@@ -9,13 +9,17 @@ import {
   TreeChildren,
   Tree,
   Relation,
+  TreeLevelColumn,
 } from 'typeorm';
 
-@Tree("closure-table")
+@Tree('closure-table')
 @Entity()
 export class Equipment {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @TreeLevelColumn()
+  level: number;
 
   @TreeParent({ onDelete: 'SET NULL' })
   parent: Relation<Equipment> | null;
