@@ -11,7 +11,7 @@ import {
 
 export class UpdateEquipmentDto {
   @IsOptional()
-  parent?:  { id: number };
+  parent?: { id: number | null } | null;
 
 
   @IsInt()

@@ -64,19 +64,39 @@ export class EquipmentService {
     }
   }
 
-  async update(id: number, updateDto: UpdateEquipmentDto): Promise<Equipment> {
+  async update(id: number, updateDto: UpdateEquipmentDto): Promise<any> {
     const equipment = await this.treeRepository.findOne({
       where: { id },
       relations: ['parent'],
     });
 
+    const p1 = equipment?.parent;
+    
     if (!equipment) {
       throw new NotFoundException(`Equipment ${id} not found`);
     }
 
     Object.assign(equipment, updateDto);
 
-    return this.treeRepository.save(equipment);
+    if (updateDto.parent?.id) {
+      const parentEq = await this.treeRepository.findOne({
+        where: { id: updateDto.parent.id },
+        relations: ['parent'],
+      });
+      
+      if (parentEq?.parent) {
+        parentEq.parent = null;
+        await this.treeRepository.save(parentEq);
+
+        await this.treeRepository.save(equipment);
+
+        if (p1) parentEq.parent = p1;
+
+        return await this.treeRepository.save(parentEq);
+      }
+    }
+
+    return await this.treeRepository.save(equipment);
   }
 
   async remove(id: number): Promise<Equipment> {
