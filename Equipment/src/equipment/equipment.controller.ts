@@ -24,24 +24,15 @@ import { MultipartData } from 'src/core/decorators/multipart-data.decorator';
 // @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class EquipmentController {
   constructor(private readonly equipmentService: EquipmentService) {}
-  
-  @Get()
-  test() {
-    console.log('test');
-  }
 
-  @Post('a')
+  @Post()
   async create(@Body() createEquipmentDto: CreateEquipmentDto) {
-    console.log(createEquipmentDto, 'createEquipmentDto');
-
     const newEquipment = await this.equipmentService.create(createEquipmentDto);
     return newEquipment;
   }
 
   @Get('tree/all')
   findAllWithChildren() {
-    console.log('tree/all test5');
-
     return this.equipmentService.findAllWithChildren();
   }
 

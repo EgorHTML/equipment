@@ -36,9 +36,6 @@ export class CategoriesController {
     @Body() data: UpdateCategoryDto,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    console.log(data,'data');
-    console.log(id,'id');
-    
     return this.categoriesService.update(data, id);
   }
 
