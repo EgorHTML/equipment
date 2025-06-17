@@ -33,7 +33,7 @@ export class UpdateEquipmentDto {
 
   @IsOptional()
   @IsDateString()
-  warranty_end?: string;
+  warranty_end?: number | null;
 
   @IsOptional()
   @IsString()
