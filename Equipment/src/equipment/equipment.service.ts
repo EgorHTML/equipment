@@ -64,8 +64,14 @@ export class EquipmentService {
     }
   }
 
-  async update(id: number, updateDto: UpdateEquipmentDto): Promise<Equipment> {
-    return this.equipmentProviders.manager.transaction(async (run) => {
+  async update(
+    id: number,
+    updateDto: UpdateEquipmentDto,
+    transaction?,
+  ): Promise<Equipment> {
+    return this.equipmentProviders.manager.transaction(async (run2) => {
+      const run = transaction ? transaction : run2;
+
       const equipment = await run.findOne(Equipment, {
         where: { id },
         relations: ['parent'],
@@ -77,12 +83,17 @@ export class EquipmentService {
 
       Object.assign(equipment, updateDto);
 
-
       if (updateDto.parent?.id) {
         const parentEq = await run.findOne(Equipment, {
           where: { id: updateDto.parent.id },
           relations: ['parent'],
         });
+
+        if (!parentEq)
+          throw new NotFoundException(
+            `Equipment ${updateDto.parent.id} not found`,
+          );
+
         const p1 = parentEq?.parent;
         if (parentEq?.parent) {
           parentEq.parent = null;
@@ -103,7 +114,16 @@ export class EquipmentService {
   async remove(id: number): Promise<Equipment> {
     const equipment = await this.findOne(id);
 
-    return this.treeRepository.remove(equipment);
+    return this.equipmentProviders.manager.transaction(async (run) => {
+      for (let i = 0; i < equipment.children.length; i++) {
+        const child = equipment.children[i];
+        child.parent = equipment.parent;
+
+        await this.update(child.id, child as UpdateEquipmentDto, run);
+      }
+
+      return run.remove(equipment);
+    });
   }
 
   async linkToTicket(linkDto: LinkEquipmentTicketDto): Promise<void> {
