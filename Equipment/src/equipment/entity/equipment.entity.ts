@@ -69,3 +69,5 @@ export class Equipment {
     this.updated_at = Math.floor(Date.now() / 1000);
   }
 }
+
+
