@@ -62,4 +62,17 @@ export class EquipmentController {
   ) {
     // await this.filesService.uploadAndLinkFiles([data.files.file].flat(), id, 1);
   }
+
+  @Post(':equipmentId/assign/user/:userId')
+  async assign(
+    @Param('userId') userId: number,
+    @Param('equipmentId') equipmentId: number,
+  ) {
+    return this.equipmentService.assignEquipment(userId, equipmentId);
+  }
+
+   @Get('user/:userId')
+  async getUserEquipment(@Param('userId') userId: number) {
+    return this.equipmentService.getUserEquipment(userId);
+  }
 }

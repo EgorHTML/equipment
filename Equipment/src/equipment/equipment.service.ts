@@ -10,7 +10,11 @@ import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { EntityManager, Repository, TreeRepository } from 'typeorm';
 import { Equipment } from './entity/equipment.entity';
 import { Equipment_finite } from './entity/equipment_finite.entity';
-import { IEquipment, IEquipment_overall } from './interfaces/equipment.interface';
+import {
+  IEquipment,
+  IEquipment_overall,
+} from './interfaces/equipment.interface';
+import { Equipment_user } from './entity/equipment_user.entity';
 
 @Injectable()
 export class EquipmentService {
@@ -18,6 +22,8 @@ export class EquipmentService {
   private treeRepository: TreeRepository<Equipment>;
 
   constructor(
+    @Inject('EQUIPMENT_USER')
+    private readonly equipmentUserRepo: Repository<Equipment_user>,
     @Inject('EQUIPMENT_REPOSITORY')
     private equipmentRepository: Repository<Equipment>,
     @Inject('EQUIPMENT_FINITE_REPOSITORY')
@@ -41,19 +47,20 @@ export class EquipmentService {
   async create(createDto: CreateEquipmentDto): Promise<IEquipment_overall> {
     try {
       const equipment = this.treeRepository.create(createDto);
-      let equipment_finite
+      let equipment_finite;
 
       const savedEquipment = await this.treeRepository.save(equipment);
 
       if (createDto.quantity !== undefined) {
-        equipment_finite = this.equipmentFiniteRepository.create(
-          { id: savedEquipment.id, quantity: createDto.quantity }
-        );
+        equipment_finite = this.equipmentFiniteRepository.create({
+          id: savedEquipment.id,
+          quantity: createDto.quantity,
+        });
 
-        await this.equipmentFiniteRepository.save(equipment_finite)
+        await this.equipmentFiniteRepository.save(equipment_finite);
       }
 
-      return { ...savedEquipment, ...equipment_finite }
+      return { ...savedEquipment, ...equipment_finite };
     } catch (error) {
       if (['23505', '23503'].includes(error.code)) {
         throw new ConflictException(error.detail);
@@ -70,11 +77,14 @@ export class EquipmentService {
 
     if (!equipment) throw new NotFoundException();
 
-    const finite = await this.equipmentFiniteRepository.findOneBy({ id: equipment?.id })
+    const finite = await this.equipmentFiniteRepository.findOneBy({
+      id: equipment?.id,
+    });
 
     const equipment_finite: IEquipment_overall = {
-      ...equipment, quantity: finite?.quantity ?? 0,
-    }
+      ...equipment,
+      quantity: finite?.quantity ?? 0,
+    };
 
     return equipment_finite;
   }
@@ -91,7 +101,7 @@ export class EquipmentService {
         where: { id },
         relations: ['parent'],
       });
-      let equipment_finite
+      let equipment_finite;
 
       if (!equipment) {
         throw new NotFoundException(`Equipment ${id} not found`);
@@ -124,28 +134,35 @@ export class EquipmentService {
       }
 
       if (updateDto.quantity !== undefined) {
-        equipment_finite = await run.findOneBy(Equipment_finite, { id: equipment.id })
+        equipment_finite = await run.findOneBy(Equipment_finite, {
+          id: equipment.id,
+        });
 
         if (updateDto.quantity === null && equipment_finite) {
-          await run.remove(equipment_finite)
-          equipment_finite = undefined
+          await run.remove(equipment_finite);
+          equipment_finite = undefined;
         }
 
         if (updateDto.quantity) {
-          equipment_finite = await run.save(Equipment_finite, { id: equipment.id, quantity: updateDto.quantity })
+          equipment_finite = await run.save(Equipment_finite, {
+            id: equipment.id,
+            quantity: updateDto.quantity,
+          });
         }
       }
-      const savedEquipment = await run.save(equipment)
-      this.logger.debug(equipment, 'equipment for save')
-      this.logger.debug(savedEquipment, 'savedEquipment')
-      this.logger.debug(equipment_finite, 'equipment_finite')
-      return { ...savedEquipment, ...equipment_finite }
+      const savedEquipment = await run.save(equipment);
+      this.logger.debug(equipment, 'equipment for save');
+      this.logger.debug(savedEquipment, 'savedEquipment');
+      this.logger.debug(equipment_finite, 'equipment_finite');
+      return { ...savedEquipment, ...equipment_finite };
     });
   }
 
   async remove(id: number): Promise<IEquipment> {
     const equipment = await this.findOne(id);
-    const equipment_finite = await this.equipmentFiniteRepository.findOneBy({ id: equipment.id })
+    const equipment_finite = await this.equipmentFiniteRepository.findOneBy({
+      id: equipment.id,
+    });
 
     return this.equipmentRepository.manager.transaction(async (run) => {
       for (let i = 0; i < equipment.children.length; i++) {
@@ -155,8 +172,55 @@ export class EquipmentService {
         await this.update(child.id, child as UpdateEquipmentDto, run);
       }
 
-      await run.remove(equipment_finite)
+      await run.remove(equipment_finite);
       return run.remove(equipment);
     });
+  }
+
+  async assignEquipment(
+    userId: number,
+    equipmentId: number,
+  ): Promise<Equipment_user> {
+    const userExists = await this.checkUserExists(userId);
+    if (!userExists) throw new NotFoundException('User not found');
+
+    const equipmentExists = await this.checkEquipmentExists(equipmentId);
+
+    if (!equipmentExists) throw new NotFoundException('Equipment not found');
+
+    return this.equipmentUserRepo.save({
+      user_id: userId,
+      equipment_id: equipmentId,
+    });
+  }
+
+  async getUserEquipment(userId: number): Promise<any[]> {
+    const connections = await this.equipmentUserRepo.find({
+      where: { user_id: userId },
+      relations: ['equipment'],
+    });
+
+    return connections;
+  }
+
+  private async checkUserExists(userId: number): Promise<boolean> {
+    //   try {
+    //     const response = await firstValueFrom(
+    //       this.httpService.get(`http://user-server/users/${userId}/exists`),
+    //     );
+    //     return response.data.exists;
+    //   } catch (error) {
+    //     return false;
+    //   }
+    // }
+
+    return true;
+  }
+
+  private async checkEquipmentExists(equipmentId: number): Promise<boolean> {
+    const count = await this.equipmentRepository.count({
+      where: { id: equipmentId },
+    });
+    return count > 0;
   }
 }
