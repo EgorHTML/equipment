@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 // import { AuthUserId } from '../auth/decorators/auth-user-id.decorator'; // получения ID пользователя
-import { MultipartData } from 'src/core/decorators/multipart-data.decorator';
+import { MultipartData } from 'src/decorators/multipart-data.decorator';
 
 @Controller('files')
 export class FilesController {

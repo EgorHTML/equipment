@@ -2,9 +2,7 @@ import { IsString, IsNotEmpty, IsOptional, IsInt, IsDateString, IsNumber, Min, M
 
 export class CreateEquipmentDto {
   @IsOptional()
-  @IsInt()
-  @IsPositive()
-  parent_id?: number;
+  parent?:  { id: number };
 
   @IsInt()
   @IsPositive()
@@ -21,8 +19,7 @@ export class CreateEquipmentDto {
   serial_number: string; 
 
   @IsOptional()
-  @IsDateString()
-  warranty_end?: string; 
+  warranty_end?: number; 
 
   @IsOptional()
   @IsString()

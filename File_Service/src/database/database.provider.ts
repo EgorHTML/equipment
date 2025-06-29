@@ -1,6 +1,6 @@
 import { Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
+import { Pool } from 'pg';
 
 export const PG_CONNECTION = 'PG_CONNECTION';
 
@@ -8,23 +8,20 @@ export const databaseProvider: Provider = {
   provide: PG_CONNECTION,
   inject: [ConfigService],
   useFactory: async (configService: ConfigService) => {
-    const AppDataSource = new DataSource({
-      type: 'postgres',
+    const pool = new Pool({
       host: configService.get<string>('POSTGRES_HOST'),
       port: configService.get<number>('POSTGRES_PORT'),
-      username: configService.get<string>('POSTGRES_USER'),
+      user: configService.get<string>('POSTGRES_USER'),
       password: configService.get<string>('POSTGRES_PASSWORD'),
       database: configService.get<string>('POSTGRES_DB'),
-      synchronize: true,
-      logging: true,
-      entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
-      subscribers: [],
-      migrations: [],
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
     });
     try {
-      await AppDataSource.initialize();
+      await pool.connect();
       console.log('PostgreSQL Connected');
-      return AppDataSource;
+      return pool;
     } catch (error) {
       console.error('PostgreSQL Connection Error:', error);
       throw error;

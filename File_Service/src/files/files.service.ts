@@ -7,13 +7,13 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Pool } from 'pg'; 
-import { PG_CONNECTION } from '../core/database/database.provider';
-import { MinioService } from '../core/minio/minio.service';
+import { PG_CONNECTION } from '../database/database.provider';
+import { MinioService } from '../minio/minio.service';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
-import { FileMetadata } from '../shared/interfaces/file-metadata.interface';
-import { ProcessedFile } from '../core/interfaces/processed-file.interface'; 
+import { FileMetadata } from '../interfaces/file-metadata.interface';
+import { ProcessedFile } from '../interfaces/processed-file.interface'; 
 
 @Injectable()
 export class FilesService {

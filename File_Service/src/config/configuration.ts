@@ -12,6 +12,15 @@ export const configuration = registerAs('app', () => ({
     database: process.env.POSTGRES_DB,
   },
 
+  minio: {
+    endPoint: process.env.MINIO_ENDPOINT,
+    port: parseInt(process.env.MINIO_PORT ?? '81', 10),
+    accessKey: process.env.MINIO_ACCESS_KEY,
+    secretKey: process.env.MINIO_SECRET_KEY,
+    useSSL: process.env.MINIO_USE_SSL === 'true', 
+    bucketName: process.env.MINIO_BUCKET_NAME,
+  },
+
   rabbitmq: {
     url: process.env.RABBITMQ_URL,
     reportQueue: process.env.RABBITMQ_REPORT_QUEUE,
@@ -28,4 +37,5 @@ export const configuration = registerAs('app', () => ({
 
 export type AppConfig = ReturnType<typeof configuration>;
 export type DatabaseConfig = AppConfig['database'];
+export type MinioConfig = AppConfig['minio'];
 export type RabbitMQConfig = AppConfig['rabbitmq'];
