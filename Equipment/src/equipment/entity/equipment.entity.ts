@@ -11,7 +11,9 @@ import {
   Relation,
   BeforeInsert,
   BeforeUpdate,
+  OneToMany,
 } from 'typeorm';
+import { Equipment_user } from './equipment_user.entity';
 
 @Tree('closure-table')
 @Entity()
@@ -68,4 +70,7 @@ export class Equipment {
   updateTimestampOnUpdate() {
     this.updated_at = Math.floor(Date.now() / 1000);
   }
+
+  @OneToMany(() => Equipment_user, (user) => user.user_id)
+  linkedUsers: Equipment_user[];
 }
