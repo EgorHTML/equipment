@@ -15,6 +15,7 @@ import {
   IEquipment_overall,
 } from './interfaces/equipment.interface';
 import { Equipment_user } from './entity/equipment_user.entity';
+import { Equipment_company } from './entity/equipment_company.entity';
 
 @Injectable()
 export class EquipmentService {
@@ -22,6 +23,8 @@ export class EquipmentService {
   private treeRepository: TreeRepository<Equipment>;
 
   constructor(
+    @Inject('EQUIPMENT_COMPANY')
+    private readonly equipmentCompanyRepo: Repository<Equipment_company>,
     @Inject('EQUIPMENT_USER')
     private readonly equipmentUserRepo: Repository<Equipment_user>,
     @Inject('EQUIPMENT_REPOSITORY')
@@ -194,7 +197,7 @@ export class EquipmentService {
     });
   }
 
-   async unassignUserEquipment(
+  async unassignUserEquipment(
     userId: number,
     equipmentId: number,
   ): Promise<any> {
@@ -227,10 +230,59 @@ export class EquipmentService {
     return true;
   }
 
+  private async checkCompanyExists(userId: number): Promise<boolean> {
+    //   try {
+    //     const response = await firstValueFrom(
+    //       this.httpService.get(`http://user-server/users/${userId}/exists`),
+    //     );
+    //     return response.data.exists;
+    //   } catch (error) {
+    //     return false;
+    //   }
+    // }
+
+    return true;
+  }
+
   private async checkEquipmentExists(equipmentId: number): Promise<boolean> {
     const count = await this.equipmentRepository.count({
       where: { id: equipmentId },
     });
     return count > 0;
+  }
+
+  async assignCompanyEquipment(
+    companyId: number,
+    equipmentId: number,
+  ): Promise<Equipment_company> {
+    const companyExists = await this.checkCompanyExists(companyId);
+    if (!companyExists) throw new NotFoundException('User not found');
+
+    const equipmentExists = await this.checkEquipmentExists(equipmentId);
+    if (!equipmentExists) throw new NotFoundException('Equipment not found');
+
+    return this.equipmentCompanyRepo.save({
+      company_id: companyId,
+      equipment_id: equipmentId,
+    });
+  }
+
+  async unassignCompanyEquipment(
+    companyId: number,
+    equipmentId: number,
+  ): Promise<any> {
+    return this.equipmentCompanyRepo.delete({
+      company_id: companyId,
+      equipment_id: equipmentId,
+    });
+  }
+
+  async getCompanyEquipment(companyId: number): Promise<any[]> {
+    const connections = await this.equipmentCompanyRepo.find({
+      where: { company_id: companyId },
+      relations: ['equipment'],
+    });
+
+    return connections;
   }
 }

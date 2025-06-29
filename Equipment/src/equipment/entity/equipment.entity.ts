@@ -14,6 +14,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Equipment_user } from './equipment_user.entity';
+import { Equipment_company } from './equipment_company.entity';
 
 @Tree('closure-table')
 @Entity()
@@ -73,4 +74,7 @@ export class Equipment {
 
   @OneToMany(() => Equipment_user, (user) => user.user_id)
   linkedUsers: Equipment_user[];
+
+  @OneToMany(() => Equipment_company, (company) => company.company_id)
+  linkedCompanies: Equipment_company[];
 }

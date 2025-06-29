@@ -64,7 +64,7 @@ export class EquipmentController {
   }
 
   @Post(':equipmentId/assign/user/:userId')
-  async assign(
+  async assignUser(
     @Param('userId') userId: number,
     @Param('equipmentId') equipmentId: number,
   ) {
@@ -72,7 +72,7 @@ export class EquipmentController {
   }
 
   @Delete(':equipmentId/assign/user/:userId')
-  async unassign(
+  async unassignUser(
     @Param('userId') userId: number,
     @Param('equipmentId') equipmentId: number,
   ) {
@@ -82,5 +82,26 @@ export class EquipmentController {
   @Get('user/:userId')
   async getUserEquipment(@Param('userId') userId: number) {
     return this.equipmentService.getUserEquipment(userId);
+  }
+
+  @Post(':equipmentId/assign/company/:companyId')
+  async assignCompany(
+    @Param('companyId') companyId: number,
+    @Param('equipmentId') equipmentId: number,
+  ) {
+    return this.equipmentService.assignCompanyEquipment(companyId, equipmentId);
+  }
+
+  @Delete(':equipmentId/assign/company/:companyId')
+  async unassignCompany(
+    @Param('companyId') companyId: number,
+    @Param('equipmentId') equipmentId: number,
+  ) {
+    return this.equipmentService.unassignCompanyEquipment(companyId, equipmentId);
+  }
+
+  @Get('company/:companyId')
+  async getCompanyEquipment(@Param('companyId') companyId: number) {
+    return this.equipmentService.getCompanyEquipment(companyId);
   }
 }

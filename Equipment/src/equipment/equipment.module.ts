@@ -6,12 +6,19 @@ import { PG_CONNECTION } from 'src/core/database/database.provider';
 import { Equipment } from './entity/equipment.entity';
 import { Equipment_finite } from './entity/equipment_finite.entity';
 import { Equipment_user } from './entity/equipment_user.entity';
+import { Equipment_company } from './entity/equipment_company.entity';
 
 @Module({
   controllers: [EquipmentController],
   providers: [
     EquipmentService,
-     {
+    {
+      provide: 'EQUIPMENT_COMPANY',
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(Equipment_company),
+      inject: [PG_CONNECTION],
+    },
+    {
       provide: 'EQUIPMENT_USER',
       useFactory: (dataSource: DataSource) =>
         dataSource.getRepository(Equipment_user),
@@ -32,4 +39,4 @@ import { Equipment_user } from './entity/equipment_user.entity';
   ],
   exports: [EquipmentService],
 })
-export class EquipmentModule { }
+export class EquipmentModule {}
