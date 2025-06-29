@@ -47,7 +47,7 @@ export class UpdateEquipmentDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  quantity?: number;
+  quantity?: number | null;
 
   @IsOptional()
   @IsInt({ each: true })

@@ -55,34 +55,6 @@ export class EquipmentController {
     return this.equipmentService.remove(id);
   }
 
-  @Post('/link/ticket')
-  @HttpCode(HttpStatus.CREATED)
-  linkToTicket(@Body() linkDto: LinkEquipmentTicketDto) {
-    return this.equipmentService.linkToTicket(linkDto);
-  }
-
-  @Patch('/link/ticket/:ticketId/:equipmentId')
-  updateLinkToTicket(
-    @Param('ticketId', ParseIntPipe) ticketId: number,
-    @Param('equipmentId', ParseIntPipe) equipmentId: number,
-    @Body('quantity_used', ParseIntPipe) quantityUsed: number,
-  ) {
-    return this.equipmentService.updateLinkToTicket(
-      ticketId,
-      equipmentId,
-      quantityUsed,
-    );
-  }
-
-  @Delete('/link/ticket/:ticketId/:equipmentId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  unlinkFromTicket(
-    @Param('ticketId', ParseIntPipe) ticketId: number,
-    @Param('equipmentId', ParseIntPipe) equipmentId: number,
-  ) {
-    return this.equipmentService.unlinkFromTicket(ticketId, equipmentId);
-  }
-
   @Post(':id/files')
   async linkFile(
     @MultipartData() data: MultipartData,
