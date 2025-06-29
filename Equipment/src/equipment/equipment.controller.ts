@@ -68,10 +68,18 @@ export class EquipmentController {
     @Param('userId') userId: number,
     @Param('equipmentId') equipmentId: number,
   ) {
-    return this.equipmentService.assignEquipment(userId, equipmentId);
+    return this.equipmentService.assignUserEquipment(userId, equipmentId);
   }
 
-   @Get('user/:userId')
+  @Delete(':equipmentId/assign/user/:userId')
+  async unassign(
+    @Param('userId') userId: number,
+    @Param('equipmentId') equipmentId: number,
+  ) {
+    return this.equipmentService.unassignUserEquipment(userId, equipmentId);
+  }
+
+  @Get('user/:userId')
   async getUserEquipment(@Param('userId') userId: number) {
     return this.equipmentService.getUserEquipment(userId);
   }

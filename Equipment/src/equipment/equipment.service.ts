@@ -177,7 +177,7 @@ export class EquipmentService {
     });
   }
 
-  async assignEquipment(
+  async assignUserEquipment(
     userId: number,
     equipmentId: number,
   ): Promise<Equipment_user> {
@@ -189,6 +189,16 @@ export class EquipmentService {
     if (!equipmentExists) throw new NotFoundException('Equipment not found');
 
     return this.equipmentUserRepo.save({
+      user_id: userId,
+      equipment_id: equipmentId,
+    });
+  }
+
+   async unassignUserEquipment(
+    userId: number,
+    equipmentId: number,
+  ): Promise<any> {
+    return this.equipmentUserRepo.delete({
       user_id: userId,
       equipment_id: equipmentId,
     });
