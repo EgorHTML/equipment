@@ -7,11 +7,18 @@ import { Equipment } from './entity/equipment.entity';
 import { Equipment_finite } from './entity/equipment_finite.entity';
 import { Equipment_user } from './entity/equipment_user.entity';
 import { Equipment_company } from './entity/equipment_company.entity';
+import { Equipment_ticket } from './entity/equipment_ticket.entity';
 
 @Module({
   controllers: [EquipmentController],
   providers: [
     EquipmentService,
+    {
+      provide: 'EQUIPMENT_TICKET',
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(Equipment_ticket),
+      inject: [PG_CONNECTION],
+    },
     {
       provide: 'EQUIPMENT_COMPANY',
       useFactory: (dataSource: DataSource) =>

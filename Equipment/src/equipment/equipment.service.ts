@@ -16,6 +16,7 @@ import {
 } from './interfaces/equipment.interface';
 import { Equipment_user } from './entity/equipment_user.entity';
 import { Equipment_company } from './entity/equipment_company.entity';
+import { Equipment_ticket } from './entity/equipment_ticket.entity';
 
 @Injectable()
 export class EquipmentService {
@@ -23,6 +24,8 @@ export class EquipmentService {
   private treeRepository: TreeRepository<Equipment>;
 
   constructor(
+    @Inject('EQUIPMENT_TICKET')
+    private readonly equipmentTicketRepo: Repository<Equipment_ticket>,
     @Inject('EQUIPMENT_COMPANY')
     private readonly equipmentCompanyRepo: Repository<Equipment_company>,
     @Inject('EQUIPMENT_USER')
@@ -187,14 +190,17 @@ export class EquipmentService {
     const userExists = await this.checkUserExists(userId);
     if (!userExists) throw new NotFoundException('User not found');
 
-    const equipmentExists = await this.checkEquipmentExists(equipmentId);
-
-    if (!equipmentExists) throw new NotFoundException('Equipment not found');
-
-    return this.equipmentUserRepo.save({
-      user_id: userId,
-      equipment_id: equipmentId,
-    });
+    try {
+      return await this.equipmentUserRepo.save({
+        user_id: userId,
+        equipment_id: equipmentId,
+      });
+    } catch (error) {
+      if(error.code === '23503'){
+        throw new NotFoundException('Оборудование не найдено')
+      }
+      throw error
+    }
   }
 
   async unassignUserEquipment(
@@ -217,30 +223,14 @@ export class EquipmentService {
   }
 
   private async checkUserExists(userId: number): Promise<boolean> {
-    //   try {
-    //     const response = await firstValueFrom(
-    //       this.httpService.get(`http://user-server/users/${userId}/exists`),
-    //     );
-    //     return response.data.exists;
-    //   } catch (error) {
-    //     return false;
-    //   }
-    // }
-
     return true;
   }
 
-  private async checkCompanyExists(userId: number): Promise<boolean> {
-    //   try {
-    //     const response = await firstValueFrom(
-    //       this.httpService.get(`http://user-server/users/${userId}/exists`),
-    //     );
-    //     return response.data.exists;
-    //   } catch (error) {
-    //     return false;
-    //   }
-    // }
+  private async checkCompanyExists(companyId: number): Promise<boolean> {
+    return true;
+  }
 
+  private async checkTicketExists(ticketId: number): Promise<boolean> {
     return true;
   }
 
@@ -284,5 +274,23 @@ export class EquipmentService {
     });
 
     return connections;
+  }
+
+  async assignTicketEquipment(
+    ticketId: number,
+    equipmentId: number,
+    quantity: number,
+  ): Promise<Equipment_ticket> {
+    const ticketExists = await this.checkTicketExists(ticketId);
+    if (!ticketExists) throw new NotFoundException('Ticket not found');
+
+    const equipmentExists = await this.checkEquipmentExists(equipmentId);
+    if (!equipmentExists) throw new NotFoundException('Equipment not found');
+
+    return this.equipmentTicketRepo.save({
+      ticket_id: ticketId,
+      equipment_id: equipmentId,
+      quantity_used: quantity,
+    });
   }
 }
