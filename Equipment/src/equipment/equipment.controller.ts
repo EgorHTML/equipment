@@ -16,7 +16,7 @@ import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { LinkEquipmentTicketDto } from './dto/link-equipment-ticket.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MultipartData } from 'src/core/decorators/multipart-data.decorator';
 
 @ApiTags('Оборудование (Equipment)')
@@ -103,5 +103,28 @@ export class EquipmentController {
   @Get('company/:companyId')
   async getCompanyEquipment(@Param('companyId') companyId: number) {
     return this.equipmentService.getCompanyEquipment(companyId);
+  }
+
+    @Patch(':equipmentId/assign/ticket/:ticketId')
+  @ApiOperation({ summary: 'Привязать/обновить/отвязать оборудование от заявки' })
+  @ApiResponse({ status: 200, description: 'Связь успешно создана или обновлена' })
+  @ApiResponse({ status: 404, description: 'Заявка или оборудование не найдены' })
+  linkTicketEquipment(
+    @Param('equipmentId', ParseIntPipe) equipmentId: number,
+    @Param('ticketId', ParseIntPipe) ticketId: number,
+    @Body() linkDto: LinkEquipmentTicketDto,
+  ) {
+    return this.equipmentService.linkTicketEquipment(
+      ticketId,
+      equipmentId,
+      linkDto.quantity_used,
+    );
+  }
+
+  @Get('ticket/:ticketId')
+  @ApiOperation({ summary: 'Получить все оборудование для заявки' })
+  @ApiResponse({ status: 200, description: 'Список оборудования для заявки' })
+  getTicketEquipment(@Param('ticketId', ParseIntPipe) ticketId: number) {
+    return this.equipmentService.getTicketEquipment(ticketId);
   }
 }

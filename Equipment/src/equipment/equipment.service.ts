@@ -293,4 +293,59 @@ export class EquipmentService {
       quantity_used: quantity,
     });
   }
+
+   async linkTicketEquipment(
+    ticketId: number,
+    equipmentId: number,
+    quantity: number,
+  ): Promise<Equipment_ticket | { message: string }> {
+    // 1. Проверяем существование заявки и оборудования
+    const ticketExists = await this.checkTicketExists(ticketId);
+    if (!ticketExists) throw new NotFoundException('Ticket not found');
+
+    const equipmentExists = await this.checkEquipmentExists(equipmentId);
+    if (!equipmentExists) throw new NotFoundException('Equipment not found');
+
+    // 2. Логика создания/обновления/удаления
+    if (quantity > 0) {
+      // Используем save, который работает как "upsert" (update or insert).
+      // Если запись с таким составным ключом (ticket_id, equipment_id) существует, он обновит ее.
+      // Если нет - создаст новую.
+      const link = this.equipmentTicketRepo.create({
+        ticket_id: ticketId,
+        equipment_id: equipmentId,
+        quantity_used: quantity,
+      });
+      return this.equipmentTicketRepo.save(link);
+    } else {
+      // Если quantity равно 0, удаляем запись.
+      const deleteResult = await this.equipmentTicketRepo.delete({
+        ticket_id: ticketId,
+        equipment_id: equipmentId,
+      });
+
+      if (deleteResult.affected === 0) {
+        // Если ничего не было удалено (например, связи и так не было),
+        // можно бросить ошибку или просто вернуть сообщение.
+        throw new NotFoundException(
+          `Link between ticket ${ticketId} and equipment ${equipmentId} not found.`,
+        );
+      }
+      return { message: 'Link successfully removed.' };
+    }
+  }
+
+  /**
+   * Получает все оборудование, привязанное к заявке.
+   * @param ticketId ID заявки
+   */
+  async getTicketEquipment(ticketId: number): Promise<Equipment_ticket[]> {
+    const ticketExists = await this.checkTicketExists(ticketId);
+    if (!ticketExists) throw new NotFoundException('Ticket not found');
+
+    return this.equipmentTicketRepo.find({
+      where: { ticket_id: ticketId },
+      relations: ['equipment'], // Загружаем связанное оборудование
+    });
+  }
 }

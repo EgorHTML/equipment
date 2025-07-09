@@ -1,18 +1,8 @@
-import { IsNotEmpty, IsInt, IsPositive } from 'class-validator';
+import { IsNotEmpty, IsInt, IsPositive, Min } from 'class-validator';
 
 export class LinkEquipmentTicketDto {
   @IsInt()
-  @IsPositive()
+  @Min(0)
   @IsNotEmpty()
   quantity_used: number;
-
-  @IsNotEmpty()
-  @IsInt()
-  @IsPositive()
-  equipment_id: number;
-
-  @IsNotEmpty()
-  @IsInt()
-  @IsPositive()
-  ticket_id: number;
 }
